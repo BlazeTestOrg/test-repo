@@ -1,0 +1,28 @@
+name: Validate code in the merge queue
+
+on:
+  merge_group:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Display info
+      run: | 
+        pwd
+        tree -a -I '.git'
+        git status
+    - name: Run slow CI (emulated by a long sleep)
+      run: |
+        SLEEP_TIME=$((RANDOM % 201 + 100))
+        echo "Sleeping for $SLEEP_TIME seconds"
+        sleep $SLEEP_TIME
+    - name: Fail if run number is multiple of 3
+      run: |
+        echo "Run number: ${{ github.run_number }}"
+        if [ $(( ${{ github.run_number }} % 3 )) -eq 0 ]; then
+          echo "Run number ${{ github.run_number }} is a multiple of 3 - failing!"
+          exit 1
+        fi
