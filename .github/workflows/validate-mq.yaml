@@ -23,6 +23,7 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
+        exit 1
         # Extract PR number from merge group head ref (format: gh-readonly-queue/main/pr-123-...)
         PR_NUMBER=$(echo "${{ github.event.merge_group.head_ref }}" | grep -oP 'pr-\K\d+')
         echo "PR Number: $PR_NUMBER"
