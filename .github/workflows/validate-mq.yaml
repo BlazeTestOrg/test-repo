@@ -1,0 +1,38 @@
+name: Validate code in the merge queue
+
+on:
+  merge_group:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Display info
+      run: | 
+        pwd
+        tree -a -I '.git'
+        git status
+    - name: Run slow CI (emulated by a long sleep)
+      run: |
+        SLEEP_TIME=$((RANDOM % 201 + 100))
+        echo "Sleeping for $SLEEP_TIME seconds"
+        sleep $SLEEP_TIME
+    - name: Fail if PR title contains [fail-mq[
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # Extract PR number from merge group head ref (format: gh-readonly-queue/main/pr-123-...)
+        PR_NUMBER=$(echo "${{ github.event.merge_group.head_ref }}" | grep -oP 'pr-\K\d+')
+        echo "PR Number: $PR_NUMBER"
+
+        # Get the PR title using GitHub CLI
+        PR_TITLE=$(gh pr view "$PR_NUMBER" --json title --jq '.title')
+        echo "PR Title: $PR_TITLE"
+
+        # Check if title contains [fail-mq]
+        if [[ "$PR_TITLE" == *"[fail-mq]"* ]]; then
+          echo "PR title contains [fail-mq] - failing!"
+          exit 1
+        fi
