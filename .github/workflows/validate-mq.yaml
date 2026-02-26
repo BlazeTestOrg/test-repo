@@ -19,10 +19,20 @@ jobs:
         SLEEP_TIME=$((RANDOM % 201 + 100))
         echo "Sleeping for $SLEEP_TIME seconds"
         sleep $SLEEP_TIME
-    - name: Fail if run number is multiple of 3
+    - name: Fail if PR title contains [fail-mq[
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
-        echo "Run number: ${{ github.run_number }}"
-        if [ $(( ${{ github.run_number }} % 3 )) -eq 0 ]; then
-          echo "Run number ${{ github.run_number }} is a multiple of 3 - failing!"
+        # Extract PR number from merge group head ref (format: gh-readonly-queue/main/pr-123-...)
+        PR_NUMBER=$(echo "${{ github.event.merge_group.head_ref }}" | grep -oP 'pr-\K\d+')
+        echo "PR Number: $PR_NUMBER"
+
+        # Get the PR title using GitHub CLI
+        PR_TITLE=$(gh pr view "$PR_NUMBER" --json title --jq '.title')
+        echo "PR Title: $PR_TITLE"
+
+        # Check if title contains [fail-mq]
+        if [[ "$PR_TITLE" == *"[fail-mq]"* ]]; then
+          echo "PR title contains [fail-mq] - failing!"
           exit 1
         fi
